@@ -17,8 +17,81 @@ from support import (MODEL, SYSTEM_PROMPT, call_local, execute_tool, mcp_client,
 MAX_TOOL_CALLS = 8  # Larkspur's own build capped the loop here; then a human takes over.
 
 TONE_ADDENDUM = ""                       # ✏️ Build 4, step 4.1, intelligence lane
-EXTRA_TOOLS: List[Dict[str, Any]] = []   # ✏️ Build 2, step 2.1: schemas for the tools you add
-LOCAL_TOOLS: Dict[str, Any] = {}         # ✏️ Build 2, step 2.1: the functions behind them
+EXTRA_TOOLS: List[Dict[str, Any]] = [    # ✏️ Build 2, step 2.1: schemas for the tools you add
+    {
+        "name": "next_available_day",
+        "description": (
+            "Answer the first question a cancelled or stranded Larkspur customer asks: "
+            "what is the soonest day you can actually get me out? Call it for questions "
+            "about DATES, when the customer wants to know how long they are stuck rather "
+            "than which specific flight to take. It needs the departure and arrival "
+            "airport codes, the date the customer was booked to travel, and the cabin. "
+            "It searches Larkspur inventory forward from that date and returns the "
+            "earliest date with an open seat as YYYY-MM-DD, or says plainly that there is "
+            "no open seat in the schedule it can see. It holds nothing and books nothing, "
+            "and it answers for a party of one."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "origin": {
+                    "type": "string",
+                    "description": "Departure airport, three-letter IATA code, e.g. DEN.",
+                },
+                "dest": {
+                    "type": "string",
+                    "description": "Arrival airport, three-letter IATA code, e.g. BOI.",
+                },
+                "date": {
+                    "type": "string",
+                    "description": (
+                        "The disrupted travel date in ISO format, YYYY-MM-DD, "
+                        "e.g. 2025-05-08. The search starts here and looks forward, never backward."
+                    ),
+                },
+                "cabin": {
+                    "type": "string",
+                    "description": (
+                        "Cabin to search: Y for main, J for first. Use the cabin "
+                        "the customer is already ticketed in. Defaults to Y."
+                    ),
+                    "enum": ["Y", "J"],
+                },
+            },
+            "required": ["origin", "dest", "date"],
+        },
+    },
+    {
+        "name": "fare_rules",
+        "description": (
+            "Return the Larkspur Customer Commitment and fare rules text behind an "
+            "entitlement decision, straight from the published Handbook excerpt. Call it "
+            "when a customer challenges an answer and wants to know the rule, or asks "
+            "why something is or is not covered, so the reply can quote the Handbook "
+            "instead of paraphrasing it. It needs one section: a number, or any words "
+            "from the section title such as 'care while you wait'. It returns that "
+            "section's full text. It is reference reading, not an entitlements decision: "
+            "the policy table is still the only source of truth for what is owed."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "section": {
+                    "type": "string",
+                    "description": (
+                        "Which section to read. A number like '6', or words from its "
+                        "title like 'fare families', 'when we delay', 'care while you wait', "
+                        "'chat automation'."
+                    ),
+                },
+            },
+            "required": ["section"],
+        },
+    },
+]
+LOCAL_TOOLS: Dict[str, Any] = {          # ✏️ Build 2, step 2.1: the functions behind them
+    "next_available_day": next_available_day,
+}
 
 
 def text_of(response) -> str:
@@ -68,16 +141,16 @@ def run_agent(pnr: str, last_name: str, message: str) -> str:            # ✏�
     answer = ""
     turns = 1
     while response.stop_reason == "tool_use" and turns < MAX_TOOL_CALLS:
-        messages.append({"role": "assistant", "content": response.content})  # Fault 1: must echo full content list
+        messages.append({"role": "assistant", "content": text_of(response)})
         messages.append({"role": "user", "content": tool_results(response)})
-        # Fault 2: removed stale `answer = text_of(response)` here
+        answer = text_of(response)
         response = client.messages.create(
             model=MODEL, max_tokens=4096, system=runtime_preamble() + SYSTEM_PROMPT + TONE_ADDENDUM,
             thinking={"type": "adaptive"}, tools=tools, messages=messages,
         )
         turns += 1
 
-    return text_of(response)  # Fault 3: return from final response, not stale var
+    return answer
 
 
 def tool_list() -> List[Dict[str, Any]]:                   # ✏️ Build 2, step 2.2
@@ -119,19 +192,14 @@ def build_tools() -> List[Dict[str, Any]]:                 # ✏️ Build 1, ste
                 "type": "object",
                 "properties": {
                     "flight_no": {"type": "string"},
-                    "date": {"type": "string", "description": "YYYY-MM-DD"},
+                    "date": {"type": "string", "description": "MM/DD/YYYY"},
                 },
                 "required": ["flight_no", "date"],
             },
         },
         {
             "name": "search_alternatives",
-            "description": (
-                "Search for available Larkspur rebooking alternatives for a disrupted PNR. "
-                "Returns option_ids, flight details, cabin, and seat availability from the "
-                "alternatives cache. Call this before hold_seat or check_policy so you have "
-                "real option_ids to work with — never invent them."
-            ),
+            "description": "search",
             "input_schema": {
                 "type": "object",
                 "properties": {"pnr": {"type": "string"}},
