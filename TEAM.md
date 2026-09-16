@@ -7,5 +7,6 @@ The review reads these names. Nothing else comes off the list. Your pod still
 decides in the moment who does what.
 
 - Ekip Kalir
-- <Name>
-- <Name>
+- Husain Muhammad
+- Elena Marinas Hurtado
+- Emmanuel Robert
