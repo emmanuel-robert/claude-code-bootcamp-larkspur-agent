@@ -1,8 +1,8 @@
 # ACCOUNT.md
 
-Account:
-Workflow:
-Date:
+Account: Larkspur Airlines
+Workflow: A disrupted passenger contacts support after a delay or cancellation. The agent reads the booking record and live flight status, applies the disruption policy to determine entitlements, may search alternatives and hold a seat, and issues meal or goodwill vouchers within policy thresholds. The customer's own confirm-click finalises any rebooking. Refunds, group bookings, unaccompanied minors, and legal threats stay human.
+Date: 2026-10-10
 
 Three lines, and nobody can write them for you.
 

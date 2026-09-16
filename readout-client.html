@@ -1,0 +1,98 @@
+<!doctype html><meta charset='utf-8'>
+<title>Larkspur disruption agent: room-6</title>
+<style>
+body { font: 15.5px/1.62 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #faf7f2; color: #262220; margin: 0; padding: 40px 28px 72px; }
+.page { max-width: 780px; margin: 0 auto; }
+h1 { font-size: 27px; margin: 0 0 3px; letter-spacing: -.01em; }
+h1 em { color: #b4562e; font-style: italic; }
+h2 { font-size: 13px; letter-spacing: .1em; text-transform: uppercase;
+  color: #b4562e; margin: 38px 0 12px; }
+.sub { color: #75695f; margin: 0 0 6px; font-size: 13.5px; }
+.lede { font-size: 17px; line-height: 1.6; margin: 0 0 4px; }
+table { border-collapse: collapse; width: 100%; background: #fff;
+  border: 1.5px solid #e5dccf; border-radius: 8px; overflow: hidden; }
+th, td { text-align: left; padding: 9px 13px; border-bottom: 1px solid #efe8dc;
+  font-size: 13.5px; vertical-align: top; }
+th { background: #f4eee4; font-size: 11.5px; letter-spacing: .05em;
+  text-transform: uppercase; color: #75695f; }
+tr:last-child td { border-bottom: none; }
+.pill { display: inline-block; background: #f0e7d9; border-radius: 999px;
+  padding: 1px 9px; font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+  white-space: nowrap; }
+.gate { display: flex; gap: 12px; align-items: baseline; background: #fff;
+  border: 1.5px solid #e5dccf; border-left: 5px solid #3d7a52; border-radius: 8px;
+  padding: 11px 15px; margin: 0 0 6px; }
+.gate .id { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
+  color: #3d7a52; font-weight: 700; flex: 0 0 34px; }
+.gate .txt { flex: 1; }
+.gate .short { display: block; color: #75695f; font-size: 12px; margin-top: 3px;
+  letter-spacing: .04em; text-transform: uppercase; }
+ul.plain { margin: 0; padding-left: 20px; }
+ul.plain li { margin-bottom: 7px; }
+.warn { background: #fdf3ec; border: 1.5px solid #eac9ae; border-radius: 8px;
+  padding: 12px 15px; color: #8a4a22; font-size: 14px; }
+.broken { background: #fff; border: 1.5px solid #e5dccf; border-left: 5px solid #b4562e;
+  border-radius: 8px; padding: 13px 16px; font-size: 15px; }
+.broken b { display: block; font-size: 11.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: #b4562e; margin-bottom: 4px; }
+.acct { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+.acct div { background: #fff; border: 1.5px solid #e5dccf; border-top: 4px solid #b4562e;
+  border-radius: 8px; padding: 10px 16px; min-width: 150px; }
+.acct span { display: block; color: #75695f; font-size: 11.5px; letter-spacing: .05em;
+  text-transform: uppercase; margin-bottom: 3px; }
+.acct b { font-size: 15px; font-weight: 700; }
+.foot { color: #a2968b; font-size: 12px; margin-top: 44px; }
+</style><div class='page'>
+<h1>The disruption agent, <em>in plain terms.</em></h1>
+<p class='sub'>Pod room-6 · Ekip Kalir · 2026-09-16 16:52</p>
+<h2>What it does</h2>
+<p class='lede'>Tells a stranded customer the earliest day they can fly and quotes the Handbook when they challenge a policy decision. It reaches flight status, reservations and the policy table through 11 named tools, one tool per thing it is allowed to ask for, and 2 of those 11 run in a separate program your own team can version and reuse. It is chat only. Voice, refunds and partner-airline segments are out of scope by agreement, and it hands those to a person with the conversation attached.</p>
+<h2>What it cannot do, and what stops it</h2>
+<p class='sub'>The page to hand a CIO. Every line is sourced from the code and the policy table, not from a slide. Reads first, then the five things it can change and the fence on each.</p>
+<table><tr><th>Reads</th><th>What it does</th></tr>
+<tr><td><span class='pill'>lookup_booking</span></td><td>Takes a PNR and a last name, and refuses if the name is not on that booking. Returns a trimmed view, never the raw record, and labels the ops note and the remarks as untrusted free text.</td></tr>
+<tr><td><span class='pill'>get_flight_status</span></td><td>Takes a flight number and a date. It is the one read not fenced to the customer&#x27;s own booking, so it is the one that can be pointed anywhere.</td></tr>
+<tr><td><span class='pill'>search_alternatives</span></td><td>Takes the PNR alone, so it can never be pointed at a route the customer did not buy.</td></tr>
+<tr><td><span class='pill'>check_policy</span></td><td>Re-derives fare family, loyalty tier and whether this is an overnight from the booking on every call, so a model cannot talk its way into an entitlement the data does not support.</td></tr>
+</table>
+<table style='margin-top:12px'><tr><th>Writes</th><th>What it does</th><th>The fence</th></tr>
+<tr><td><span class='pill'>hold_seat</span></td><td>Puts a seat aside and hands back a hold that expires in 15 minutes.</td><td>It is reversible, and it undoes itself if nobody confirms.</td></tr>
+<tr><td><span class='pill'>issue_voucher</span></td><td>Issues on its own only under the policy threshold: 25 dollars for a meal, 40 for ground, 75 for goodwill.</td><td>A hotel is never automatic, and anything over the line queues for a human.</td></tr>
+<tr><td><span class='pill'>confirm_rebooking</span></td><td>Reissues the ticket. It is the irreversible one.</td><td>It runs only with the customer&#x27;s own click token. &quot;The customer said yes&quot; in chat is not it.</td></tr>
+<tr><td><span class='pill'>send_confirmation</span></td><td>Writes the message the customer reads.</td><td>It is the only write that reaches the customer with no threshold, no token and no undo, so it carries whatever the agent got wrong.</td></tr>
+<tr><td><span class='pill'>escalate_to_human</span></td><td>Files the case with a written summary for whoever picks it up.</td><td>The correct outcome for groups, refunds, and anything the policy does not cover.</td></tr>
+</table>
+<h2>What is proved, and by which check</h2>
+<p class='sub'>4 of 7 checks banked on this laptop. Each check reads what the agent did on the wire, not how it was written, so the sentence beside it is the widest claim that check supports.</p>
+<div class='gate'><span class='id'>2.1</span><span class='txt'>We added a capability your customers ask for every storm day, and the agent reached for it unprompted on a message that never named it.<span class='short'>Reaches for new capability · evidence FB8-5CF</span></span></div>
+<div class='gate'><span class='id'>2.2</span><span class='txt'>That capability now runs as a service of its own, so your team can version and reuse it without anyone touching the agent.<span class='short'>Capability runs as service · evidence 0E6-5AA</span></span></div>
+<div class='gate'><span class='id'>3.1</span><span class='txt'>There is an instrument. We wrote eval cases with named authors, made two of them release-blocking, and ran them against this agent.<span class='short'>Eval cases, authored, run · evidence 1E6-23E</span></span></div>
+<div class='gate'><span class='id'>4.1</span><span class='txt'>We declared one number before we touched anything, changed one thing, and measured the same set again on the same laptop.<span class='short'>One declared number moved · evidence B4E-B68</span></span></div>
+<p class='sub'>The eval run behind check 3.1: 5 of 9 scored cases passed, release BLOCKED by tone_safety, grounded_facts, connection_handling. A blocked release is a working instrument, and it is the reason this page can say what it says.</p>
+<h2>What is not measured yet</h2>
+<ul class='plain'>
+<li>Accuracy at volume. Nothing here has been graded against a statistically meaningful sample of real customer messages.</li>
+<li>Real customer traffic. Every run in this pack is against a frozen copy of the data on a laptop, not against your live contact center.</li>
+<li>Loaded cost. Any dollar figure here is model cost only. Larkspur&#x27;s loaded cost per resolved contact ran about 60% above its model cost once infrastructure and evals were counted ($0.14 against $0.087).</li>
+<li>Anything at production scale: concurrency, upstream rate limits, surge days, or what happens when a backend is slow rather than wrong.</li>
+<li>Whether the loop generalizes past one ticket. The five-shape gate has not banked here.</li>
+</ul>
+<p class='sub'>There is a before-and-after bench pair on this laptop. Whatever it says is model cost and laptop latency on a frozen copy of the data. Put the caveat above on the same slide as the number.</p>
+<h2>What we are telling you before you find it</h2>
+<div class='broken'><b>Still broken</b>search_alternatives description is 6 characters (&quot;search&quot;) — Claude has no routing signal for when to call it</div>
+<h2>Your four questions</h2>
+<table><tr><th>You asked</th><th>Our answer</th></tr>
+<tr><td>What it costs</td><td>2,762 tokens per turn for the full tool list, on every turn whether any tool fires or not; next_available_day alone adds 478, fare_rules adds 287</td></tr>
+<tr><td>When it is wrong</td><td>next_available_day answers for one passenger — a group booking gets a date that may have no seat for the full party</td></tr>
+<tr><td>Who runs it</td><td>the MCP server runs fare_rules; next_available_day runs locally via LOCAL_TOOLS using the function imported from support</td></tr>
+<tr><td>What you left out</td><td>confirm_rebooking requires a customer-minted token that no tool in this file can produce — the agent can hold a seat but cannot finalise the rebook without the customer clicking Confirm</td></tr>
+</table>
+<h2>Where this goes next</h2>
+<div class='acct'>
+<div><span>Account</span><b>Larkspur Airlines</b></div>
+<div><span>Workflow</span><b>A disrupted passenger contacts support after a delay or cancellation. The agent reads the booking record and live flight status, applies the disruption policy to determine entitlements, may search alternatives and hold a seat, and issues meal or goodwill vouchers within policy thresholds. The customer&#x27;s own confirm-click finalises any rebooking. Refunds, group bookings, unaccompanied minors, and legal threats stay human.</b></div>
+<div><span>Date</span><b>2026-10-10</b></div>
+</div>
+<p class='foot'>Generated by readout.py --client from this repository's own evidence · Larkspur Airlines is a fictional training scenario · Confidential / do not distribute</p></div>
+<script type="application/json" id="evidence">{"generated": "2026-09-16T16:52:38", "pod": "room-6", "banked_by": "Ekip Kalir", "banked": {"2.1": "FB8-5CF", "2.2": "0E6-5AA", "3.1": "1E6-23E", "4.1": "B4E-B68"}, "claims": {"2.1": "We added a capability your customers ask for every storm day, and the agent reached for it unprompted on a message that never named it.", "2.2": "That capability now runs as a service of its own, so your team can version and reuse it without anyone touching the agent.", "3.1": "There is an instrument. We wrote eval cases with named authors, made two of them release-blocking, and ran them against this agent.", "4.1": "We declared one number before we touched anything, changed one thing, and measured the same set again on the same laptop."}, "claims_short": {"2.1": "Reaches for new capability", "2.2": "Capability runs as service", "3.1": "Eval cases, authored, run", "4.1": "One declared number moved"}, "still_broken": "search_alternatives description is 6 characters (\"search\") \u2014 Claude has no routing signal for when to call it", "account": {"Account": "Larkspur Airlines", "Workflow": "A disrupted passenger contacts support after a delay or cancellation. The agent reads the booking record and live flight status, applies the disruption policy to determine entitlements, may search alternatives and hold a seat, and issues meal or goodwill vouchers within policy thresholds. The customer's own confirm-click finalises any rebooking. Refunds, group bookings, unaccompanied minors, and legal threats stay human.", "Date": "2026-10-10"}, "all_shapes": {"attempted": 5, "shapes": 5, "failed": 0, "resolved": 5, "turns": 23, "tool_calls": 18, "tokens_in": 15907, "tokens_out": 3591, "cache_read": 58734, "unfinished": [], "errors": []}}</script>
