@@ -4,7 +4,7 @@ Six lines and a lever. Your words. The last two are scored.
 
 Built: Larkspur disruption care agent — 9 given tools plus next_available_day and fare_rules
 Does: Tells a stranded customer the earliest day they can fly and quotes the Handbook when they challenge a policy decision
-Number: D6E-FDA (step 2.1, banked for Emmanuel Robert)
+Number: $0.0656 per resolved contact, claude-sonnet-4-6, 5 shapes, 1 run each (avg 18,184 tokens in / 736 out)
 Guardrail: fare_rules is read-only reference — it never substitutes for check_policy's entitlements decision, which re-derives fare family and loyalty tier from the booking on every call
 Next: Build 3 — next_available_day answers for a party of one; a group will get a date that has no seat for all of them
 Still broken: search_alternatives description is 6 characters ("search") — Claude has no routing signal for when to call it
