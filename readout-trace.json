@@ -1,8 +1,9 @@
 {
-  "turns": 4,
-  "tool_calls": 3,
+  "turns": 5,
+  "tool_calls": 4,
   "tool_names": [
     "lookup_booking",
+    "get_flight_status",
     "get_flight_status",
     "check_policy"
   ],
@@ -12,11 +13,11 @@
   "streamed": false,
   "deltas_seen": 0,
   "tokens": {
-    "input": 13070,
-    "output": 670,
+    "input": 19859,
+    "output": 736,
     "cache_read": 0,
     "cache_write": 0
   },
   "cache_hit_ratio": null,
-  "elapsed": 16.0
+  "elapsed": 13.3
 }
