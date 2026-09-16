@@ -10,6 +10,7 @@ Next: Build 3 — next_available_day answers for a party of one; a group will ge
 Still broken: search_alternatives description is 6 characters ("search") — Claude has no routing signal for when to call it
 
 Lever: cost
+Caveat: prompt caching lowers input token cost on warm turns but does not reduce TTFT or TTC; latency still grows as conversation length grows, and we cannot prove it holds at storm-day concurrency against a slow backend.
 
 ## Priya asked
 
